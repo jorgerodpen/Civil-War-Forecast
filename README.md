@@ -1,2 +1,1 @@
-# Civil-War-Forecast
- 
+# Forecasting civil wars
