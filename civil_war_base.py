@@ -182,8 +182,7 @@ def sector_filter(variable):
            "Extremists", 
            "Exiles", 
            "Dissident",
-           "Violent",
-           "Unidentified Forces"]
+           "Violent"]
     
     # List of words associated with People
     ppl = ["Civilian", 
@@ -199,10 +198,10 @@ def sector_filter(variable):
            "Citizen",
            "Villager",
            "Lawyer",
-           "Militia",
            "Medical",
            "Legal",
-           "Social"]
+           "Social",
+           "Militia"]
     
     # Checking if any of those words are in the column
     if type(variable) != str: # skipping NaNs
@@ -707,25 +706,27 @@ def cleaning_cameo(cameo_val):
 # =====*****+++++=====*****+++++=====*****+++++=====*****+++++ #
 # =====*****+++++=====*****+++++=====*****+++++=====*****+++++ #
 
-def add_cw(model, pitffilepath):
+def add_cw(ogmodel, pitffilepath):
     """
     Generates the columns for each model to predict Civil Wars.
     
     Parameters
     ----------
-    model : pandas.core.frame.DataFrame
+    ogmodel : pandas.core.frame.DataFrame
         DataFrame containing the model.
     pitffilepath : str
         File path of the PITF generated excel file.
 
     Returns
     -------
-    model : pandas.core.frame.DataFrame
+    ogmodel : pandas.core.frame.DataFrame
         DataFrame containing the model with the Civil Wars variables added. 
     """
     
     # Reading PITF
     PITF = read_PITF(pitffilepath)
+    
+    model = ogmodel
     
     # Adding columns
     model.loc[:,"CW_s"] = np.nan
@@ -739,7 +740,7 @@ def add_cw(model, pitffilepath):
         finish = row[2]
 
         # Boolean operators
-        condition_s = (model["ISO3"] == iso3) & (model["Year_Month"]== start)
+        condition_s = (model["ISO3"] == iso3) & (model["Year_Month"] == start)
         condition_f = (model["ISO3"] == iso3) & (model["Year_Month"]== finish)
         condition_o = (model["ISO3"] == iso3) &  (model["Year_Month"]>start) & \
                             (model["Year_Month"]<finish)
@@ -781,9 +782,45 @@ def add_cw(model, pitffilepath):
     # Final targets
     model.iloc[:,-3:] = model.iloc[:,-3:].astype("int64").astype("str").astype("str")
     model.loc[:,"CW_plus1"] = model.iloc[:,-3].astype("str") + model.iloc[:,-2].astype("str") + model.iloc[:,-1].astype("str")
-    model.loc[:,"CW_plus1"] = model.loc[:,"CW_plus1"].replace({"110":"100"})
+    ogmodel.loc[:,"CW_plus1"] = model.loc[:,"CW_plus1"].replace({"110":"100"})
     
-    return model
+    return ogmodel.drop(["CW_s","CW_f","CW_o"], axis = 1)
+
+# =====*****+++++=====*****+++++=====*****+++++=====*****+++++ #
+# =====*****+++++=====*****+++++=====*****+++++=====*****+++++ #
+# =====*****+++++=====*****+++++=====*****+++++=====*****+++++ #
+
+def add_missing_months(model):
+    """
+    Adds missing months to the model for those countries that are missing some data and fills them with 0s.
+
+    Parameters
+    ----------
+    model : pandas.core.frame.DataFrame
+        Dataset containing the aggregated values of the model
+
+    Returns
+    -------
+    final : pandas.core.frame.DataFrame
+        Returns dataframe containing missing values filled with 0s. 
+
+    """  
+    # Unique values
+    unique_iso3 = model.ISO3.unique()
+    unique_date = model.Year_Month.unique()
+    
+    # Dataframe to filter missing Year_Month values
+    list_original = []
+    for iso3 in unique_iso3:
+        for date in unique_date:
+            list_original.append([iso3, date])
+    year_month = pd.DataFrame(list_original)
+    
+    # Adding missing values
+    final = model.merge(year_month, left_on=["ISO3", "Year_Month"], 
+                    right_on=[0,1], how="outer").drop([0,1], axis=1)
+    
+    return final.fillna(0)
 
 # =====*****+++++=====*****+++++=====*****+++++=====*****+++++ #
 # =====*****+++++=====*****+++++=====*****+++++=====*****+++++ #
