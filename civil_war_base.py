@@ -164,23 +164,19 @@ def sector_filter(variable):
            "Mobs", 
            "Protestors", 
            "Popular Opposition",
-           "Parties",
+           "Banned Parties",
            "Union",
-           "Activists"]
+           "Exiles"]
     
     # List of words associated with Insurgents
-    ins = ["Insurgents", 
-           "Banned Parties", 
-           "Gangs", 
+    ins = ["Insurgents",  
            "Anarchist", 
            "Rebel", 
            "Organized Violent", 
            "Radicals", 
            "Separatists", 
-           "Criminals", 
            "Fundamentalists", 
            "Extremists", 
-           "Exiles", 
            "Dissident",
            "Violent"]
     
@@ -200,8 +196,7 @@ def sector_filter(variable):
            "Lawyer",
            "Medical",
            "Legal",
-           "Social",
-           "Militia"]
+           "Social"]
     
     # Checking if any of those words are in the column
     if type(variable) != str: # skipping NaNs
@@ -451,230 +446,6 @@ def country_to_iso3(country):
             return np.nan
         else:
             return ISO3
-        
-        
-# =====*****+++++=====*****+++++=====*****+++++=====*****+++++ #
-# =====*****+++++=====*****+++++=====*****+++++=====*****+++++ #
-# =====*****+++++=====*****+++++=====*****+++++=====*****+++++ #
-
-def interaction_fraction(zipfilepath, pitffilepath):
-    """
-    Generates the "Interaction Fraction" model.
-    
-    Parameters
-    ----------
-    zipfilepath : str
-        Path of the .zip file that contains the .zip files for every year.
-    pitffilepath : str
-        File path of the PITF generated excel file.
-
-    Returns
-    -------
-    model : pandas.core.frame.DataFrame
-        DataFrame containing the "Interaction Fraction" model
-    """
-    print("Generating model...")
-    # Reading the data
-    df = pd.DataFrame()
-    for i in range(1995, 2019):
-        newdf = iso3country(zipfilepath, i)
-        df = pd.concat([df, newdf])
-        
-    cols = ["Gov_Ins", "Gov_Opp", "Gov_Peo", "Ins_Gov", "Ins_Opp", "Ins_Peo", 
-           "Opp_Gov", "Opp_Ins", "Opp_Peo", "Peo_Gov", "Peo_Ins", "Peo_Opp"]
-    
-    pd.options.mode.chained_assignment = None
-    model1 = df[["ISO3","Year_Month"]]
-    model1[cols] = df[cols]
-    
-    # Aggregating
-    modelg = model1.groupby(["ISO3","Year_Month"]).sum().reset_index()
-    modelg.loc[:,cols] = modelg.loc[:,cols].apply(lambda x: x/x.sum(), axis=1).fillna(0)
-    
-    # Cleaning missing years
-    print("Cleaning missing years...")
-    
-    # Unique values
-    unique_iso3 = modelg.ISO3.unique()
-    unique_date = modelg.Year_Month.unique()
-    
-    # Dataframe to filter missing Year_Month values
-    list_original = []
-    for iso3 in unique_iso3:
-        for date in unique_date:
-            list_original.append([iso3, date])
-    year_month = pd.DataFrame(list_original)
-    
-    # Adding missing values
-    final = modelg.merge(year_month, 
-                     left_on=["ISO3", "Year_Month"], 
-                     right_on=[0,1], how="outer").drop([0,1], axis=1)
-    
-    # Sorting and substituting missing values
-    finals = final.sort_values(["ISO3","Year_Month"]).reset_index(drop=True).fillna(0)
-    
-    # Adding Civil War columns
-    print("Adding civil wars...")
-    model = add_cw(finals, pitffilepath)
-    
-    print("Done!")
-    return model        
-    
-# =====*****+++++=====*****+++++=====*****+++++=====*****+++++ #
-# =====*****+++++=====*****+++++=====*****+++++=====*****+++++ #
-# =====*****+++++=====*****+++++=====*****+++++=====*****+++++ #
-
-def mean_intensity(zipfilepath, pitffilepath):
-    """
-    Generates the "Mean Intensity" model.
-    
-    Parameters
-    ----------
-    zipfilepath : str
-        Path of the .zip file that contains the .zip files for every year.
-    pitffilepath : str
-        File path of the PITF generated excel file.
-
-    Returns
-    -------
-    model : pandas.core.frame.DataFrame
-        DataFrame containing the "Mean Intensity" model
-    """
-    print("Generating model...")
-    # Reading the data
-    df = pd.DataFrame()
-    for i in range(1995, 2019):
-        newdf = iso3country(zipfilepath, i)
-        df = pd.concat([df, newdf])
-    
-    # Looping over this columns
-    cols = ["Gov_Ins", "Gov_Opp", "Gov_Peo", "Ins_Gov", "Ins_Opp", "Ins_Peo", 
-           "Opp_Gov", "Opp_Ins", "Opp_Peo", "Peo_Gov", "Peo_Ins", "Peo_Opp"]
-
-    # Generating the model
-    model1 = df.loc[:,["ISO3", "Year_Month"]]
-    for col in cols:
-        model1.loc[:,col] = df.loc[:,col]*df.loc[:,"Intensity"]
-    
-    # Aggregating
-    modelg = model1.groupby(["ISO3","Year_Month"]).mean().reset_index()
-    
-    # Cleaning missing years
-    print("Cleaning missing years...")
-    
-    # Unique values
-    unique_iso3 = modelg.ISO3.unique()
-    unique_date = modelg.Year_Month.unique()
-    
-    # Dataframe to filter missing Year_Month values
-    list_original = []
-    for iso3 in unique_iso3:
-        for date in unique_date:
-            list_original.append([iso3, date])
-    year_month = pd.DataFrame(list_original)
-    
-    # Adding missing values
-    final = modelg.merge(year_month, 
-                     left_on=["ISO3", "Year_Month"], 
-                     right_on=[0,1], how="outer").drop([0,1], axis=1)
-    
-    # Sorting and substituting missing values
-    finals = final.sort_values(["ISO3","Year_Month"]).reset_index(drop=True).fillna(0)
-    
-    # Adding Civil War columns
-    print("Adding civil wars...")
-    model = add_cw(finals, pitffilepath)
-    
-    print("Done!")
-    return model
-
-
-    
-# =====*****+++++=====*****+++++=====*****+++++=====*****+++++ #
-# =====*****+++++=====*****+++++=====*****+++++=====*****+++++ #
-# =====*****+++++=====*****+++++=====*****+++++=====*****+++++ #
-
-def cameo_fraction(zipfilepath, pitffilepath):
-    """
-    Generates the "CAMEO Fraction" model.
-    
-    Parameters
-    ----------
-    zipfilepath : str
-        Path of the .zip file that contains the .zip files for every year.
-    pitffilepath : str
-        File path of the PITF generated excel file.
-
-    Returns
-    -------
-    model : pandas.core.frame.DataFrame
-        DataFrame containing the "CAMEO Fraction" model
-    """
-    print("Generating model...")
-    # Reading the data
-    df = pd.DataFrame()
-    for i in range(1995, 2019):
-        newdf = iso3country(zipfilepath, i)
-        df = pd.concat([df, newdf])
-    
-    # Looping over this columns
-    cols = ["Gov_Ins", "Gov_Opp", "Gov_Peo", "Ins_Gov", "Ins_Opp", "Ins_Peo", 
-           "Opp_Gov", "Opp_Ins", "Opp_Peo", "Peo_Gov", "Peo_Ins", "Peo_Opp"]
-
-    # Generating the model
-        # Selecting two first digits
-    df["CAMEO"] = df["CAMEO"].apply(lambda x: x[:2]).astype("str")
-    
-        # Cameo model:
-    for col in cols:
-        df[col] = df[col]*df["CAMEO"]
-        df[col] = df[col].apply(cleaning_cameo)
-        
-        # Final model
-    model1 = df.drop(["Country","CAMEO","Intensity"], axis=1)
-    cameo = ["01","02","03","04","05","06","07","08","09","10","11","12","13","14","15","16","17","18","19","20"]
-    for col in cols:
-        for code in cameo:
-            col_name = col+'_'+code
-            model1[col_name] = (df[col] == code).astype("int64")
-    
-        # Deleting irrelevant columns
-    model1 = model1.drop(cols, axis=1)    
-    # Aggregating
-    modelg = model1.groupby(["ISO3","Year_Month"]).sum().reset_index()
-    
-    #Fraction
-    model_columns = modelg.columns[2:-6]
-    modelg.loc[:,model_columns] = modelg.loc[:,model_columns].apply(lambda x: x/x.sum(), axis=1).fillna(0)
-    
-    # Cleaning missing years
-    print("Cleaning missing years...")
-    
-    # Unique values
-    unique_iso3 = modelg.ISO3.unique()
-    unique_date = modelg.Year_Month.unique()
-    
-    # Dataframe to filter missing Year_Month values
-    list_original = []
-    for iso3 in unique_iso3:
-        for date in unique_date:
-            list_original.append([iso3, date])
-    year_month = pd.DataFrame(list_original)
-    
-    # Adding missing values
-    final = modelg.merge(year_month, 
-                     left_on=["ISO3", "Year_Month"], 
-                     right_on=[0,1], how="outer").drop([0,1], axis=1)
-    
-    # Sorting and substituting missing values
-    finals = final.sort_values(["ISO3","Year_Month"]).reset_index(drop=True).fillna(0)
-    
-    # Adding Civil War columns
-    print("Adding civil wars...")
-    model = add_cw(finals, pitffilepath)
-    
-    print("Done!")
-    return model
 
 
 # =====*****+++++=====*****+++++=====*****+++++=====*****+++++ #
@@ -682,7 +453,7 @@ def cameo_fraction(zipfilepath, pitffilepath):
 # =====*****+++++=====*****+++++=====*****+++++=====*****+++++ #
 def cleaning_cameo(cameo_val):
     """
-    Generates the columns for each model to predict Civil Wars.
+    Inputs nans where the CAMEO code is missing. 
     
     Parameters
     ----------
@@ -782,7 +553,7 @@ def add_cw(ogmodel, pitffilepath):
     # Final targets
     model.iloc[:,-3:] = model.iloc[:,-3:].astype("int64").astype("str").astype("str")
     model.loc[:,"CW_plus1"] = model.iloc[:,-3].astype("str") + model.iloc[:,-2].astype("str") + model.iloc[:,-1].astype("str")
-    ogmodel.loc[:,"CW_plus1"] = model.loc[:,"CW_plus1"].replace({"110":"100"})
+    ogmodel.loc[:,"CW_plus1"] = model.loc[:,"CW_plus1"].replace({"110": "S", "100": "S", "010": "E", "001": "O", "000": "P"})
     
     return ogmodel.drop(["CW_s","CW_f","CW_o"], axis = 1)
 
