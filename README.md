@@ -9,8 +9,9 @@
 - Built a random forest with AUC ~0.75 due to data imbalance and long list of features. 
 
 ## Packages
-** Python Version:** 3.8.3
-** Packages used:** pandas, numpy, scikit-learn, matplotlib, seaborn
+**Python Version:** 3.8.3
+
+**Packages used:** pandas, numpy, scikit-learn, matplotlib, seaborn
 
 ## Cleaning the data
 - Selected only internal events
