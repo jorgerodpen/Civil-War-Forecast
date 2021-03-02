@@ -21,4 +21,6 @@
 - Used counts for each kind of interaction between each sector as input variables. 
 
 ## Project report
-A project report with further information can be seen in the [CivilWarForecast.pdf](https://github.com/jorgerodpen/Civil-War-Forecast/blob/main/CivilWarForecast.pdf) document stored in this same repository. 
+One remarkable thing about the model is that it was able to detect not only civil wars but conflict escalation. For example, it was able to detect conflict escalation in February 2020 in India, where riots in Delhi ended up with 53 deaths. 
+
+A project report with further information can be seen in the [CivilWarForecast.pdf](https://github.com/jorgerodpen/Civil-War-Forecast/blob/main/CivilWarForecast.pdf) document stored in this same repository.
